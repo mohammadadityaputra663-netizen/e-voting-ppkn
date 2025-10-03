@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Pemilihan Ketua & Wakil Ketua Mahasiswa (Google Sheets DB)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Gaya Tailwind CSS tetap sama */
+        body { box-sizing: border-box; }
+        .bg-main { background: linear-gradient(135deg, #1e3a8a 0%, #374151 100%); }
+        .card-dark { background: rgba(31, 41, 55, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .progress-bar { transition: width 0.5s ease-in-out; }
+        .modal-overlay { background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px); }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .candidate-photo { background: linear-gradient(135deg, #374151, #4b5563); border: 2px solid #fbbf24; }
+        .activity-bar { background: linear-gradient(to top, #3b82f6, #60a5fa); transition: height 0.3s ease; min-height: 2px; }
+        .vote-success { animation: voteSuccess 1.5s ease-out; }
+        @keyframes voteSuccess { 0% { transform: scale(1); opacity: 1; border-color: #fbbf24; } 50% { transform: scale(1.05); opacity: 0.8; border-color: #10b981; } 100% { transform: scale(1); opacity: 1; border-color: #fbbf24; } }
+    </style>
+</head>
+<body class="bg-main min-h-screen font-sans">
+    
+    <div id="loginScreen" class="min-h-screen flex flex-col items-center justify-center px-4">
+        <div class="text-center mb-8">
+            <div class="w-20 h-20 rounded-full mx-auto mb-6 bg-white flex items-center justify-center overflow-hidden">
+                <img src="https://i.postimg.cc/9QK7ypYZ/..png" alt="Logo HPMS PPKn" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <div class="text-yellow-600 font-bold text-sm" style="display: none;">HPMS</div>
+            </div>
+            <h1 class="text-4xl font-bold text-yellow-400 mb-4">PEMILIHAN KETUA & WAKIL KETUA</h1>
+            <p class="text-white text-lg">HPMS PPKn - BHINNEKAHASTA</p>
+            <p class="text-gray-300 text-sm mt-2">2025-2026</p>
+        </div>
+        
+        <div class="card-dark rounded-lg p-8 w-full max-w-md">
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label class="block text-white text-sm font-medium mb-2">Nama Lengkap</label>
+                    <input type="text" id="namaLengkap" class="w-full px-4 py-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-yellow-400 focus:outline-none" placeholder="Masukkan nama lengkap Anda" required>
+                </div>
+                
+                <div>
+                    <label class="block text-white text-sm font-medium mb-2">Semester (PPKn)</label>
+                    <select id="semester" class="w-full px-4 py-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-yellow-400 focus:outline-none" required>
+                        <option value="">Pilih Semester Anda</option>
+                        <option value="1">Semester 1</option>
+                        <option value="2">Semester 2</option>
+                        <option value="3">Semester 3</option>
+                        <option value="4">Semester 4</option>
+                        <option value="5">Semester 5</option>
+                        <option value="6">Semester 6</option>
+                        <option value="7">Semester 7</option>
+                        <option value="8">Semester 8</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="w-full bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-3 px-6 rounded-lg transition duration-200">
+                    Lanjut Memilih
+                </button>
+            </form>
+            
+            <div class="mt-6 text-center">
+                <button id="viewResultsBtn" class="text-yellow-400 hover:text-yellow-300 text-sm underline">
+                    Lihat Hasil Pemungutan Suara Real-Time
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="candidateScreen" class="min-h-screen flex flex-col items-center justify-center px-4 hidden">
+        <div class="text-center mb-8">
+            <div class="w-20 h-20 rounded-full mx-auto mb-6 bg-white flex items-center justify-center overflow-hidden">
+                <img src="https://i.postimg.cc/9QK7ypYZ/..png" alt="Logo HPMS PPKn" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <div class="text-yellow-600 font-bold text-sm" style="display: none;">HPMS</div>
+            </div>
+            <h1 class="text-4xl font-bold text-yellow-400 mb-4">PILIH PASANGAN CALON</h1>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-6xl">
+            <div id="paslonCard1" class="card-dark rounded-lg p-6 text-center relative flex flex-col hover:border-blue-500 hover:shadow-lg transition duration-200">
+                <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-yellow-400 text-gray-900 w-8 h-8 rounded-full flex items-center justify-center font-bold">1</div>
+                <div class="candidate-photo w-24 h-24 rounded-full mx-auto mb-4 flex items-center justify-center overflow-hidden">
+                    <img src="https://i.postimg.cc/J7KV0d1r/..png" alt="Mila Apriliyana" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="w-full h-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center" style="display: none;">
+                        <span class="text-white font-bold text-2xl">MA</span>
+                    </div>
+                </div>
+                <h3 class="text-white font-bold text-lg mb-1">Mila Apriliyana</h3>
+                <p class="text-gray-300 text-sm mb-4">Wakil: Awang Fadhil P</p>
+                <div class="text-left mb-6 flex-grow">
+                    <p class="text-yellow-400 font-semibold mb-2">Visi:</p>
+                    <p class="text-gray-300 text-xs mb-3">Mewujudkan Mahasiswa Bhinnekahasta yang MANDIRI (Maju Nasionalis Disiplin Religius Inovatif).</p>
+                    <p class="text-yellow-400 font-semibold mb-2">Misi:</p>
+                    <ul class="text-gray-300 text-xs space-y-1">
+                        <li>• Meningkatkan takwa terhadap tuhan yang maha esa</li>
+                        <li>• Mengutamakan kerjasama dan kebersamaan</li>
+                        <li>• Mengoptimalkan HIMA sebagai fasilitator kreativitas</li>
+                    </ul>
+                </div>
+                <button onclick="selectCandidate(1)" class="w-full bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-2 px-4 rounded-lg transition duration-200 mt-auto">
+                    Pilih Paslon Ini
+                </button>
+            </div>
+
+            <div id="paslonCard2" class="card-dark rounded-lg p-6 text-center relative flex flex-col hover:border-yellow-500 hover:shadow-lg transition duration-200">
+                <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-yellow-400 text-gray-900 w-8 h-8 rounded-full flex items-center justify-center font-bold">2</div>
+                <div class="candidate-photo w-24 h-24 rounded-full mx-auto mb-4 flex items-center justify-center overflow-hidden">
+                    <img src="https://i.postimg.cc/VN3MjR1h/..png" alt="Keyla Stevany A" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="w-full h-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center" style="display: none;">
+                        <span class="text-white font-bold text-2xl">KS</span>
+                    </div>
+                </div>
+                <h3 class="text-white font-bold text-lg mb-1">Keyla Stevany A</h3>
+                <p class="text-gray-300 text-sm mb-4">Wakil: Dea Valentina</p>
+                <div class="text-left mb-6 flex-grow">
+                    <p class="text-yellow-400 font-semibold mb-2">Visi:</p>
+                    <p class="text-gray-300 text-xs mb-3">HMPS PPKn: Wadah kebersamaan untuk belajar, berkontribusi, dan mengabdi.</p>
+                    <p class="text-yellow-400 font-semibold mb-2">Misi:</p>
+                    <ul class="text-gray-300 text-xs space-y-1">
+                        <li>• Mendorong ruang kebersamaan dalam belajar</li>
+                        <li>• Mengoptimalkan media berita HMPS</li>
+                        <li>• Membangun rasa kebersamaan dan solidaritas</li>
+                    </ul>
+                </div>
+                <button onclick="selectCandidate(2)" class="w-full bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-2 px-4 rounded-lg transition duration-200 mt-auto">
+                    Pilih Paslon Ini
+                </button>
+            </div>
+
+            <div id="paslonCard3" class="card-dark rounded-lg p-6 text-center relative flex flex-col hover:border-green-500 hover:shadow-lg transition duration-200">
+                <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-yellow-400 text-gray-900 w-8 h-8 rounded-full flex items-center justify-center font-bold">3</div>
+                <div class="candidate-photo w-24 h-24 rounded-full mx-auto mb-4 flex items-center justify-center overflow-hidden">
+                    <img src="https://i.postimg.cc/W1ySH0sV/..png" alt="Adhitya Ahmad Z" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="w-full h-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center" style="display: none;">
+                        <span class="text-white font-bold text-2xl">AA</span>
+                    </div>
+                </div>
+                <h3 class="text-white font-bold text-lg mb-1">Adhitya Ahmad Z</h3>
+                <p class="text-gray-300 text-sm mb-4">Wakil: Riza Ade N</p>
+                <div class="text-left mb-6 flex-grow">
+                    <p class="text-yellow-400 font-semibold mb-2">Visi:</p>
+                    <p class="text-gray-300 text-xs mb-3">Menjadikan HMPS PPKn sebagai organisasi yang berlandaskan nilai-nilai Pancasila, berintegritas, dan unggul.</p>
+                    <p class="text-yellow-400 font-semibold mb-2">Misi:</p>
+                    <ul class="text-gray-300 text-xs space-y-1">
+                        <li>• Mengoptimalkan peran HMPS sebagai wadah aspirasi</li>
+                        <li>• Mendorong suasana PPKn yang kritis dan inovatif</li>
+                        <li>• Menyelenggarakan program kerja yang edukatif</li>
+                    </ul>
+                </div>
+                <button onclick="selectCandidate(3)" class="w-full bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-2 px-4 rounded-lg transition duration-200 mt-auto">
+                    Pilih Paslon Ini
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="resultsScreen" class="min-h-screen flex flex-col items-center justify-center px-4 hidden">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-yellow-400 mb-6">REKAPITULASI SUARA REAL-TIME</h1>
+            <div class="flex items-center justify-center space-x-4 mb-4">
+                <div class="flex items-center">
+                    <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse mr-2"></div>
+                    <span class="text-green-400 text-sm">Live Monitoring</span>
+                </div>
+                <div class="text-gray-300 text-sm">
+                    Update terakhir: <span id="lastUpdate" class="text-yellow-400">-</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="w-full max-w-6xl space-y-6">
+            <div class="card-dark rounded-lg p-8 text-center">
+                <h2 class="text-white text-xl font-semibold mb-4">Total Suara Masuk</h2>
+                <div id="totalVotes" class="text-6xl font-bold text-white">0</div>
+                <p class="text-gray-300 text-sm mt-2">partisipasi</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="card-dark rounded-lg p-6 flex items-center justify-between">
+                    <div class="flex-1">
+                        <h3 class="text-white font-bold text-lg">1. Mila Apriliyana - Awang Fadhil P</h3>
+                        <div class="flex items-center mt-2">
+                            <span class="text-gray-300 mr-4">Suara: <span id="votes1" class="text-white font-bold">0</span></span>
+                            <span class="text-gray-300">Persentase: <span id="percent1" class="text-white font-bold">0%</span></span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-3 mt-3">
+                            <div id="progress1" class="progress-bar bg-blue-500 h-3 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-dark rounded-lg p-6 flex items-center justify-between">
+                    <div class="flex-1">
+                        <h3 class="text-white font-bold text-lg">2. Keyla Stevany A - Dea Valentina</h3>
+                        <div class="flex items-center mt-2">
+                            <span class="text-gray-300 mr-4">Suara: <span id="votes2" class="text-white font-bold">0</span></span>
+                            <span class="text-gray-300">Persentase: <span id="percent2" class="text-white font-bold">0%</span></span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-3 mt-3">
+                            <div id="progress2" class="progress-bar bg-yellow-400 h-3 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-dark rounded-lg p-6 flex items-center justify-between">
+                    <div class="flex-1">
+                        <h3 class="text-white font-bold text-lg">3. Adhitya Ahmad Z - Riza Ade N</h3>
+                        <div class="flex items-center mt-2">
+                            <span class="text-gray-300 mr-4">Suara: <span id="votes3" class="text-white font-bold">0</span></span>
+                            <span class="text-gray-300">Persentase: <span id="percent3" class="text-white font-bold">0%</span></span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-3 mt-3">
+                            <div id="progress3" class="progress-bar bg-green-500 h-3 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-dark rounded-lg p-6 mt-6">
+                <h3 class="text-white font-bold text-lg mb-4">📊 Monitoring Real-Time</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div class="bg-gray-700 rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-blue-400" id="onlineUsers">N/A</div>
+                        <div class="text-gray-300 text-sm">User Online</div>
+                    </div>
+                    <div class="bg-gray-700 rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-green-400" id="voteRate">0%</div>
+                        <div class="text-gray-300 text-sm">Tingkat Partisipasi</div>
+                    </div>
+                    <div class="bg-gray-700 rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-yellow-400" id="avgVoteTime">0s</div>
+                        <div class="text-gray-300 text-sm">Rata-rata Waktu Voting</div>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <h4 class="text-white font-semibold mb-2">🕒 Pemilih Terbaru</h4>
+                    <div id="recentVoters" class="space-y-2 max-h-32 overflow-y-auto">
+                        <div class="text-gray-400 text-sm">Menunggu data dari Google Sheets...</div>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <h4 class="text-white font-semibold mb-2">📈 Aktivitas Voting (5 menit terakhir)</h4>
+                    <div class="flex items-end space-x-1 h-20 border-b border-gray-600" id="activityChart">
+                        </div>
+                    <div class="flex justify-between text-gray-500 text-xs mt-1">
+                        <span>5mnt lalu</span>
+                        <span>Sekarang</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-8">
+                <button onclick="fetchAllVotes(true)" class="text-gray-400 hover:text-white text-sm underline">
+                    Refresh Hasil Manual
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirmModal" class="fixed inset-0 modal-overlay flex items-center justify-center hidden z-50">
+        <div class="card-dark rounded-lg p-8 max-w-md w-full mx-4 fade-in">
+            <h3 class="text-white font-bold text-xl mb-4">Konfirmasi Pilihan Anda</h3>
+            <p class="text-gray-300 mb-6">Apakah Anda yakin dengan pilihan Anda pada <span id="selectedCandidate" class="text-yellow-400 font-semibold"></span>? Pilihan ini tidak dapat diubah.</p>
+            <div class="flex space-x-4">
+                <button onclick="closeModal()" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200">
+                    Batal
+                </button>
+                <button onclick="submitVote()" class="flex-1 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-3 px-6 rounded-lg transition duration-200">
+                    Ya, Kirim Suara
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="successModal" class="fixed inset-0 modal-overlay flex items-center justify-center hidden z-50">
+        <div class="card-dark rounded-lg p-10 max-w-sm w-full mx-4 fade-in text-center border-4 border-green-500 vote-success">
+            <div class="text-green-500 text-6xl mb-4">✓</div>
+            <h3 class="text-white font-bold text-2xl mb-2">TERIMA KASIH!</h3>
+            <p class="text-gray-300 mb-6">Suara Anda telah berhasil dicatat.</p>
+            <button onclick="showResultsScreen()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg transition duration-200">
+                Lihat Hasil
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        // =======================================================
+        // 1. KONFIGURASI GOOGLE APPS SCRIPT
+        // *GANTI DENGAN URL WEB APP ANDA DI SINI*
+        // PASTI SUDAH DIGANTI SEBELUM DI-HOSTING!
+        // =======================================================
+        const GOOGLE_APP_SCRIPT_URL = 'PASTE_URL_WEB_APP_ANDA_DI SINI'; 
+        
+        // =======================================================
+        // 2. VARIABEL GLOBAL DAN API UTAMA
+        // =======================================================
+        let selectedCandidateNumber = 0;
+        let voterData = {};
+        let voteStartTime = null;
+        let allVotes = []; 
+
+        const candidates = {
+            1: "Paslon 1 - Mila Apriliyana & Awang Fadhil P",
+            2: "Paslon 2 - Keyla Stevany A & Dea Valentina", 
+            3: "Paslon 3 - Adhitya Ahmad Z - Riza Ade N"
+        };
+
+        // Panggil API GET (untuk mengambil semua hasil)
+        async function fetchAllVotes(isManual = false) {
+            if (isManual) {
+                document.getElementById('lastUpdate').textContent = 'Mengambil data...';
+            }
+            if (GOOGLE_APP_SCRIPT_URL.includes('PASTE_URL_WEB_APP_ANDA_DI_SINI')) {
+                console.error("URL Apps Script belum diatur. Sistem tidak akan bekerja.");
+                return;
+            }
+
+            try {
+                const response = await fetch(GOOGLE_APP_SCRIPT_URL, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    allVotes = result.data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                    updateResultsUI();
+                    return true;
+                } else {
+                    console.error("Gagal mengambil data:", result.message);
+                    return false;
+                }
+            } catch (error) {
+                console.error("Kesalahan koneksi saat mengambil data:", error);
+                return false;
+            }
+        }
+
+        // Cek apakah user sudah voting (Simulasi dari Sheets)
+        function hasUserVoted(nama, semester) {
+            return allVotes.some(vote => vote.nama.toLowerCase() === nama.toLowerCase() && vote.semester === semester);
+        }
+
+        // Panggil API POST (untuk mencatat suara)
+        async function recordVote(nama, semester, vote, voteTime) {
+            const response = await fetch(GOOGLE_APP_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'cors',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ nama, semester, vote, voteTime })
+            });
+            const result = await response.json();
+            return result;
+        }
+        
+        // =======================================================
+        // 3. LOGIKA APLIKASI DAN EVENT HANDLERS
+        // =======================================================
+
+        function showCandidateScreen() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('resultsScreen').classList.add('hidden');
+            document.getElementById('candidateScreen').classList.remove('hidden');
+        }
+
+        function showResultsScreen() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('candidateScreen').classList.add('hidden');
+            document.getElementById('successModal').classList.add('hidden');
+            document.getElementById('resultsScreen').classList.remove('hidden');
+            fetchAllVotes();
+        }
+
+        function selectCandidate(candidateNum) {
+            if (voterData.hasVoted) {
+                 alert('Anda sudah memberikan suara sebelumnya. Silakan lihat hasil voting.');
+                 showResultsScreen();
+                 return;
+            }
+            
+            selectedCandidateNumber = candidateNum;
+            document.getElementById('selectedCandidate').textContent = candidates[candidateNum];
+            document.getElementById('confirmModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('confirmModal').classList.add('hidden');
+            document.getElementById('successModal').classList.add('hidden');
+        }
+
+        async function submitVote() {
+            if (selectedCandidateNumber > 0) {
+                closeModal();
+                
+                await fetchAllVotes(); 
+                const alreadyVoted = hasUserVoted(voterData.nama, voterData.semester);
+
+                if (alreadyVoted) {
+                    alert('Kesalahan: Anda sudah memberikan suara sebelumnya!');
+                    voterData.hasVoted = true;
+                    showResultsScreen();
+                    return;
+                }
+                
+                const voteTime = voteStartTime ? ((Date.now() - voteStartTime) / 1000).toFixed(1) : 0;
+                
+                try {
+                    const result = await recordVote(voterData.nama, voterData.semester, selectedCandidateNumber, parseFloat(voteTime));
+
+                    if (result.status === 'success') {
+                        await fetchAllVotes(); 
+
+                        document.getElementById('successModal').classList.remove('hidden');
+                        voterData.hasVoted = true; 
+                        voteStartTime = null;
+                        document.getElementById('loginForm').reset();
+                    } else {
+                        throw new Error(result.message || 'Unknown error');
+                    }
+
+                } catch (error) {
+                    console.error("Gagal mencatat suara:", error);
+                    alert("Terjadi kesalahan saat mencatat suara Anda: " + error.message);
+                }
+            }
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const nama = document.getElementById('namaLengkap').value.trim();
+            const semester = document.getElementById('semester').value;
+
+            await fetchAllVotes(); 
+            
+            if (nama && semester) {
+                voterData = { nama, semester };
+                voteStartTime = Date.now();
+                
+                const alreadyVoted = hasUserVoted(nama, semester);
+                voterData.hasVoted = alreadyVoted;
+                
+                if (alreadyVoted) {
+                    alert(`Halo ${nama}! Anda sudah memberikan suara. Anda akan diarahkan ke halaman hasil voting.`);
+                    showResultsScreen();
+                } else {
+                    showCandidateScreen();
+                }
+            }
+        });
+
+        document.getElementById('viewResultsBtn').addEventListener('click', function() {
+            showResultsScreen();
+        });
+
+        // =======================================================
+        // 4. FUNGSI UPDATE UI DARI DATA GOOGLE SHEETS
+        // =======================================================
+
+        function updateResultsUI() {
+            if (!allVotes || allVotes.length === 0) {
+                 document.getElementById('totalVotes').textContent = 0;
+                 document.getElementById('avgVoteTime').textContent = '0s';
+                 document.getElementById('recentVoters').innerHTML = '<div class="text-gray-400 text-sm">Belum ada pemilih...</div>';
+                 document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('id-ID');
+                 for (let i = 1; i <= 3; i++) {
+                     document.getElementById(`votes${i}`).textContent = 0;
+                     document.getElementById(`percent${i}`).textContent = '0%';
+                     document.getElementById(`progress${i}`).style.width = '0%';
+                     document.getElementById(`paslonCard${i}`)?.classList.remove('border-4', 'border-yellow-400');
+                 }
+                 return;
+            }
+
+            const totalVotes = allVotes.length;
+            const voteCounts = [0, 0, 0];
+            let totalVoteTime = 0;
+            
+            allVotes.forEach(vote => {
+                if (vote.vote >= 1 && vote.vote <= 3) {
+                    voteCounts[vote.vote - 1]++;
+                }
+                if (vote.voteTime) {
+                    totalVoteTime += parseFloat(vote.voteTime);
+                }
+            });
+
+            document.getElementById('totalVotes').textContent = totalVotes;
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('id-ID');
+
+            const avgTime = totalVotes > 0 ? (totalVoteTime / totalVotes).toFixed(1) : 0;
+            document.getElementById('avgVoteTime').textContent = avgTime + 's';
+            
+            const maxVotes = Math.max(...voteCounts);
+            for (let i = 0; i < 3; i++) {
+                const votes = voteCounts[i];
+                const percentage = totalVotes > 0 ? ((votes / totalVotes) * 100).toFixed(1) : '0.0';
+                
+                document.getElementById(`votes${i + 1}`).textContent = votes;
+                document.getElementById(`percent${i + 1}`).textContent = percentage + '%';
+                document.getElementById(`progress${i + 1}`).style.width = percentage + '%';
+
+                const card = document.getElementById(`paslonCard${i + 1}`);
+                if (totalVotes > 0 && votes > 0 && votes === maxVotes) {
+                    card?.classList.add('border-4', 'border-yellow-400');
+                } else {
+                    card?.classList.remove('border-4', 'border-yellow-400');
+                }
+            }
+            
+            updateRecentVotersUI();
+            updateActivityChartUI();
+        }
+
+        function updateRecentVotersUI() {
+            const container = document.getElementById('recentVoters');
+            const fiveRecentVotes = allVotes.slice(-5).reverse();
+
+            if (fiveRecentVotes.length === 0) {
+                container.innerHTML = '<div class="text-gray-400 text-sm">Belum ada pemilih...</div>';
+                return;
+            }
+            
+            container.innerHTML = fiveRecentVotes.map(vote => {
+                const paslonColor = vote.vote == 1 ? 'text-blue-400' : vote.vote == 2 ? 'text-yellow-400' : 'text-green-400';
+                
+                const maskedName = vote.nama.split(' ')[0] + '***';
+                const time = new Date(vote.timestamp).toLocaleTimeString('id-ID');
+
+                return `
+                    <div class="flex justify-between items-center bg-gray-700 rounded p-2">
+                        <span class="text-white text-sm">${maskedName} (Sem ${vote.semester})</span>
+                        <div class="flex items-center space-x-2">
+                            <span class="${paslonColor} text-xs font-semibold">Paslon ${vote.vote}</span>
+                            <span class="text-gray-400 text-xs">${time}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateActivityChartUI() {
+            const container = document.getElementById('activityChart');
+            const maxHeight = 60; 
+            const now = Date.now();
+            const fiveMinutesAgo = now - (5 * 60 * 1000); 
+            const activityChartData = Array(10).fill(0);
+            const intervalDuration = 30 * 1000; 
+            
+            allVotes.forEach(vote => {
+                if (vote.timestamp) {
+                    const voteTime = new Date(vote.timestamp).getTime();
+                    if (voteTime > fiveMinutesAgo) {
+                        const timeElapsed = now - voteTime;
+                        const index = 9 - Math.min(Math.floor(timeElapsed / intervalDuration), 9);
+                        activityChartData[index]++; 
+                    }
+                }
+            });
+
+            const maxValue = Math.max(...activityChartData, 1);
+            
+            container.innerHTML = activityChartData.map((value, index) => {
+                const height = (value / maxValue) * maxHeight;
+                const timeAgoStart = (9 - index) * 30; 
+                const timeAgoEnd = timeAgoStart - 30;
+                
+                return `<div class="activity-bar w-5 md:w-8 bg-blue-500 rounded-t" style="height: ${height}px;" title="${value} suara (${timeAgoEnd}-${timeAgoStart} detik lalu)"></div>`;
+            }).join('');
+        }
+
+        // =======================================================
+        // 5. STARTUP: POLLING (HAMPIR REAL-TIME)
+        // =======================================================
+        
+        // Perbarui data setiap 5 detik
+        setInterval(fetchAllVotes, 5000); 
+        
+        // Panggil saat startup untuk memuat data awal
+        document.addEventListener('DOMContentLoaded', fetchAllVotes);
+    </script>
+</body>
+</html>
